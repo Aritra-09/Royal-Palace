@@ -10,6 +10,7 @@
     />
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <title>Hotel Royal Palace</title>
 </head>
 <body>
@@ -81,7 +82,8 @@
                     </div>
                     <div class="flex justify-evenly mb-4">
                         <button class="payment-option px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-option="card">Card</button>
-                        <button class="payment-option px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-option="googlepay">UPI ID</button>
+                        <button class="payment-option px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-option="googlepay">Google Pay</button>
+                        <button class="payment-option px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" data-option="phonepe">PhonePe</button>
                     </div>
                     <div id="cardPayment" class="payment-form hidden">
                         <input type="text" id="cardNumber" placeholder="Card Number" class="w-full px-3 py-2 mb-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
@@ -91,8 +93,11 @@
                             <input type="number" placeholder="CVV" class="w-[48%] px-3 py-2 mb-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                         </div>
                     </div>
-                    <div id="upiPayment" class="payment-form hidden">
-                        <input type="text" placeholder="UPI ID" class="w-full px-3 py-2 mb-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <div id="googlepayPayment" class="payment-form hidden">
+                        <input type="text" placeholder="Google Pay UPI ID" class="w-full px-3 py-2 mb-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div id="phonepePayment" class="payment-form hidden">
+                        <input type="text" placeholder="PhonePe UPI ID" class="w-full px-3 py-2 mb-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <button id="amount" onclick="processPayment()" class="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300">
                         
@@ -148,8 +153,34 @@
             console.log('Booking details:', { name, email, checkin, checkout, guests, roomType });
             console.log('ID document:', idUpload ? idUpload.name : 'No file uploaded');
 
-            // Reset the form
-            this.reset();
+            let formData = {
+                    name: $('#name').val(),
+                    email: $('#email').val(),
+                    checkin: $('#checkin').val(),
+                    checkout: $('#checkout').val(),
+                    guests: $('#guests').val(),
+                    roomType: $('#roomType').val(),
+                    idUpload: $('#idUpload').val(),
+                };
+
+                $.ajax({
+                    type: 'POST',
+                    url: 'details.php',
+                    data: formData,
+                    dataType: 'json',
+                    encode: true
+                })
+                .done(function(data) {
+                    if (data.success) {
+                        $('#message').html('<div style="color: green;">Booking stored successfully. ID: ' + data.insertedId + '</div>');
+                        $('#bookingForm')[0].reset();
+                    } else {
+                        $('#message').html('<div style="color: red;">Error: ' + data.error + '</div>');
+                    }
+                })
+                .fail(function(data) {
+                    $('#message').html('<div style="color: red;">Error: Could not reach the server.</div>');
+                });
         });
 
         
@@ -160,7 +191,6 @@
         const paymentForms = document.querySelectorAll('.payment-form');
         let selectedPaymentMethod = '';
         let cardPayment = document.getElementById('cardNumber');
-        let upiPayment = document.getElementById('upiPayment');
 
         openModalBtn.onclick = function() {
             modal.classList.remove('hidden');
@@ -237,6 +267,8 @@
                 clearInterval(paymentProcess)
                 alert(`Payment of ₹ ${Totalamount} processed successfully with ${selectedPaymentMethod}!`);
                 modal.classList.add('hidden');
+
+                document.getElementById('bookingForm').reset()
             }, 5000);
             }
         }
